@@ -113,24 +113,44 @@ class CRM_Caseparent_Upgrader extends CRM_Caseparent_Upgrader_Base {
   } // */
 
 	/**
-	 * Create table "civicrm_case_parent"
+	 * Create tablea "civicrm_case_parent" and "civicrm_case_type_parent"
 	 * To be used to link civi cases (=child) to civi campaigns (=parent)
 	 */
+	 /* === using sql in nl.pum.campaignparent instead ===
 	public function install() {
 		$tbl = 'civicrm_case_parent';
 		//$this->ctx->log->info('Creating table "' . $tbl . '"');
 		$sql = 'CREATE TABLE IF NOT EXISTS `' . $tbl . '` (
-		`id`			int(11)	NOT NULL AUTO_INCREMENT,
-		`case_id`		int(11)	NOT NULL,
-		`campaign_id`	int(11)	NOT NULL,
-		`start_date`	date	DEFAULT NULL,
-		`end_date`		date	DEFAULT NULL,
-		`is_active`		boolean	DEFAULT TRUE,
-		KEY `id`				(`id`),
-		KEY `case_id`			(`case_id`),
-		KEY `campaign_id`		(`campaign_id`)
+		`id`				int(11)	NOT NULL AUTO_INCREMENT,
+		`case_id`			int(11)	NOT NULL,
+		`campaign_id`		int(11)	NOT NULL,
+		`start_date`		date	DEFAULT NULL,
+		`end_date`			date	DEFAULT NULL,
+		`is_active`			boolean	DEFAULT TRUE,
+		KEY `id`					(`id`),
+		KEY `case_id`				(`case_id`),
+		KEY `campaign_id`			(`campaign_id`)
 		) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8 COLLATE=utf8_unicode_ci';
 		$result = CRM_Core_DAO::executeQuery($sql);
+		CRM_Utils_System::setUFMessage('Table "' . $table . '" created.');
+		
+		$tbl = 'civicrm_case_type_parent';
+		//$this->ctx->log->info('Creating table "' . $tbl . '"');
+		$sql = 'CREATE TABLE IF NOT EXISTS `' . $tbl . '` (
+		`id`				int(11)	NOT NULL AUTO_INCREMENT,
+		`case_type_id`		int(11)	NOT NULL,
+		`campaign_type_id`	int(11)	NOT NULL,
+		`start_date`		date	DEFAULT NULL,
+		`end_date`			date	DEFAULT NULL,
+		`is_active`			boolean	DEFAULT TRUE,
+		KEY `id`					(`id`),
+		KEY `case_type_id`			(`case_type_id`),
+		KEY `campaign_type_id`		(`campaign_type_id`)
+		) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8 COLLATE=utf8_unicode_ci';
+		$result = CRM_Core_DAO::executeQuery($sql);
+		CRM_Utils_System::setUFMessage('Table "' . $table . '" created.');
 	}
+	
+	*/
   
 }
