@@ -7,17 +7,16 @@
 	<table id="temp-table">
 		<tr class="crm-admin-optionvalue-form-block-parent">
 			<td class="label"><label for="parent">Parent</label></td>
-			<td>
-				{* PROCESSING OLD QUERY RESULT
-				{foreach from=$campaigns.values item=elm}
-					<input type="checkbox" class="form-checkbox" name="case_parent" value="{$elm.id}" />&nbsp;{$elm.name}<br />
-				{/foreach}
-				*}
-				{foreach from=$form.case_type_parent.html item=elm}
-					{$elm}<br>
-				{/foreach}
-			</td>
-		</tr>
+				<td>
+					{foreach from=$form item=elm}
+						{if $elm|@count gt 1}
+							{if $elm.name|truncate:16:"":true eq "case_type_parent"}
+								{$elm.html}<br>
+							{/if}
+						{/if}
+					{/foreach}
+				</td>
+			</tr>
 	</table>
 	
 {/if}

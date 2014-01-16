@@ -71,8 +71,23 @@ function caseparent_civicrm_managed(&$entities) {
 
 //==========================================================================================
 
-function _get_qry_campaign_types() {
-	return "SELECT	v.id, v.label FROM civicrm_option_value AS v, civicrm_option_group AS g WHERE v.option_group_id = g.id AND g.name='campaign_type'";
+function _get_qry_campaign_types($id) {
+	//return "SELECT	v.id, v.label FROM civicrm_option_value AS v, civicrm_option_group AS g WHERE v.option_group_id = g.id AND g.name='campaign_type'";
+	return "
+	SELECT		r.*,
+				(p.case_type_id=" . $id . ") AS `is_selected`
+	FROM 		(
+					SELECT	v.id AS `campaign_type_id`,
+							v.label AS `campaign_type_label`
+					FROM	civicrm_option_value AS v,
+							civicrm_option_group AS g
+					WHERE	v.option_group_id = g.id
+					AND		g.name = 'campaign_type'
+				)	AS r
+	LEFT JOIN	civicrm_case_type_parent as p
+	ON			r.campaign_type_id=p.parent_campaign_type_id
+	ORDER BY	r.campaign_type_label
+	";
 }
 
 /**
@@ -85,12 +100,17 @@ function caseparent_civicrm_buildForm($formName, &$form) {
 	switch($formName) {
 	case 'CRM_Admin_Form_OptionValue':
 		// when accessed via Admin > System settings > Option Groups > Case types
-		$qry = _get_qry_campaign_types();
+		$ar_checked = array('', 'checked');
+		$id = $form->_defaultValues['id'];
+		$qry = _get_qry_campaign_types($id);
 		$result = CRM_Core_DAO::executeQuery($qry);
 		while($result->fetch()) {
-			$elm = $form->add('checkbox', 'case_type_parent', ts('Parent'));
-			$elm->_attributes['value'] = $result->id; // I do't want '1': need the recordno.
-			$elm->_text = $result->label; // this is what happened when I added a custom checkbox field to a contact
+			$elm = $form->add('checkbox', 'case_type_parent_' . $result->campaign_type_id, ts('Parent'));
+			$elm->_attributes['value'] = $result->campaign_type_id; // I do't want '1': need the recordno.
+			if ($result->is_selected==1) {
+				$elm->_attributes['checked'] = 'checked';
+			}
+			$elm->_text = $result->campaign_type_label; // this is what happened when I added a custom checkbox field to a contact
 		}
 		break;
 	case 'CRM_Admin_Form_Options':
@@ -112,8 +132,6 @@ function caseparent_civicrm_buildForm($formName, &$form) {
  */
 function caseparent_civicrm_postProcess( $formName, &$form ) {
 	// http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_postProcess
-	exit(); //------------------------
-	 dpm($form);
 	switch($formName) {
 	case 'CRM_Admin_Form_OptionValue':
 		// when accessed via Admin > System settings > Option Groups > Case types
@@ -127,17 +145,20 @@ function caseparent_civicrm_postProcess( $formName, &$form ) {
 		} catch (Exception $e) {
 		}
 		// store selected parent ids
-		if ($form->_submitValues['case_parent']) {
-			foreach($form->_submitValues['case_parent'] as $key=>$value) {
-				$sql = 'INSERT INTO `civicrm_case_type_parent` (`case_type_id`, `campaign_type_id`, `start_date`, `end_date`, `is_active`) VALUES (' . $case_type_id . ', ' . $value . ', NULL, NULL, \'1\')';
+		foreach($form->_submitValues as $key=>$value) {
+			if (strpos($key, 'case_type_parent')===0) {
+				$sql = 'INSERT INTO `civicrm_case_type_parent` (`case_type_id`, `parent_campaign_type_id`) VALUES (' . $case_type_id . ', ' . $value . ')';
+//				echo $sql . '<br>';
 				try {
 					$result = CRM_Core_DAO::executeQuery($sql);
 					//dpm($sql);
 				} catch(Exception $e) {
 				}
+//			} else {
+//				echo 'skip: ' . $key . '<br>';
 			}
 		}
-		dpm($form->_submitValues);
+//		dpm($form->_submitValues);
 		break;
 	case 'CRM_Admin_Form_Options':
 		// no action - when accessed via Admin > Civi Case > Case Types
