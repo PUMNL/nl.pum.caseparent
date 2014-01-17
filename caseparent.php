@@ -72,7 +72,6 @@ function caseparent_civicrm_managed(&$entities) {
 //==========================================================================================
 
 function _get_qry_campaign_types($id) {
-	//return "SELECT	v.id, v.label FROM civicrm_option_value AS v, civicrm_option_group AS g WHERE v.option_group_id = g.id AND g.name='campaign_type'";
 	return "
 	SELECT		r.*,
 				(p.case_type_id=" . $id . ") AS `is_selected`
@@ -91,35 +90,74 @@ function _get_qry_campaign_types($id) {
 }
 
 /**
+ * handler function for hook_civicrm_buildForm, when handling following $formNames:
+ * - CRM_Admin_Form_OptionValue
+ * - CRM_Admin_Form_Options
+ */
+function _handler_buildForm_optionValue(&$form) {
+	$id = $form->_defaultValues['id'];
+	$qry = _get_qry_campaign_types($id);
+	$result = CRM_Core_DAO::executeQuery($qry);
+	while($result->fetch()) {
+		$elm = $form->add('checkbox', 'case_type_parent_' . $result->campaign_type_id, ts('Parent'));
+		$elm->_attributes['value'] = $result->campaign_type_id; // I do't want '1': need the recordno.
+		if ($result->is_selected==1) {
+			$elm->_attributes['checked'] = 'checked';
+		}
+		$elm->_text = $result->campaign_type_label; // this is what happened when I added a custom checkbox field to a contact
+	}
+}
+
+/**
+ * handler function for hook_civicrm_postProcess, when handling following $formNames:
+ * - CRM_Admin_Form_OptionValue
+ * - CRM_Admin_Form_Options
+ */
+function _handler_postProcess_optionValue(&$form) {
+	// retrieve case type id
+	$case_type_id = $form->_defaultValues['id'];
+	// remove existing entries for specified case type
+	$sql = 'DELETE FROM `civicrm_case_type_parent` WHERE `case_type_id`=' . $case_type_id;
+	try {
+		$result = CRM_Core_DAO::executeQuery($sql);
+		//dpm($sql);
+	} catch (Exception $e) {
+	}
+	// store selected parent ids
+	foreach($form->_submitValues as $key=>$value) {
+		if (strpos($key, 'case_type_parent')===0) {
+			$sql = 'INSERT INTO `civicrm_case_type_parent` (`case_type_id`, `parent_campaign_type_id`) VALUES (' . $case_type_id . ', ' . $value . ')';
+//			echo $sql . '<br>';
+			try {
+				$result = CRM_Core_DAO::executeQuery($sql);
+				//dpm($sql);
+			} catch(Exception $e) {
+			}
+//		} else {
+//			echo 'skip: ' . $key . '<br>';
+		}
+	}
+//	dpm($form->_submitValues);
+}
+
+/**
  * Implementation of hook_civicrm_buildForm
  *
  * Add additional set of checkboxes to register parent campaign(type)s on case(type)s
  */
 function caseparent_civicrm_buildForm($formName, &$form) {
-	//dpm($formName); // DEBUG
 	switch($formName) {
 	case 'CRM_Admin_Form_OptionValue':
 		// when accessed via Admin > System settings > Option Groups > Case types
-		$ar_checked = array('', 'checked');
-		$id = $form->_defaultValues['id'];
-		$qry = _get_qry_campaign_types($id);
-		$result = CRM_Core_DAO::executeQuery($qry);
-		while($result->fetch()) {
-			$elm = $form->add('checkbox', 'case_type_parent_' . $result->campaign_type_id, ts('Parent'));
-			$elm->_attributes['value'] = $result->campaign_type_id; // I do't want '1': need the recordno.
-			if ($result->is_selected==1) {
-				$elm->_attributes['checked'] = 'checked';
-			}
-			$elm->_text = $result->campaign_type_label; // this is what happened when I added a custom checkbox field to a contact
-		}
+		_handler_buildForm_optionValue($form);
 		break;
 	case 'CRM_Admin_Form_Options':
-		// no action - when accessed via Admin > Civi Case > Case Types
+		// when accessed via Admin > Civi Case > Case Types
+		_handler_buildForm_optionValue($form);
 		break;
 	default:
-		// no action
+		// no modifications
 	}
-	//dpm($form); // DEBUG
 }
 
 
@@ -135,33 +173,11 @@ function caseparent_civicrm_postProcess( $formName, &$form ) {
 	switch($formName) {
 	case 'CRM_Admin_Form_OptionValue':
 		// when accessed via Admin > System settings > Option Groups > Case types
-		// retrieve case type id
-		$case_type_id = $form->_defaultValues['id'];
-		// remove existing entries for specified case type
-		$sql = 'DELETE FROM `civicrm_case_type_parent` WHERE `case_type_id`=' . $case_type_id;
-		try {
-			$result = CRM_Core_DAO::executeQuery($sql);
-			//dpm($sql);
-		} catch (Exception $e) {
-		}
-		// store selected parent ids
-		foreach($form->_submitValues as $key=>$value) {
-			if (strpos($key, 'case_type_parent')===0) {
-				$sql = 'INSERT INTO `civicrm_case_type_parent` (`case_type_id`, `parent_campaign_type_id`) VALUES (' . $case_type_id . ', ' . $value . ')';
-//				echo $sql . '<br>';
-				try {
-					$result = CRM_Core_DAO::executeQuery($sql);
-					//dpm($sql);
-				} catch(Exception $e) {
-				}
-//			} else {
-//				echo 'skip: ' . $key . '<br>';
-			}
-		}
-//		dpm($form->_submitValues);
+		_handler_postProcess_optionValue($form);
 		break;
 	case 'CRM_Admin_Form_Options':
-		// no action - when accessed via Admin > Civi Case > Case Types
+		// when accessed via Admin > Civi Case > Case Types
+		_handler_postProcess_optionValue($form);
 		break;
 	default:
 		// no action

@@ -24,7 +24,7 @@
 
 {literal}
 <script type="text/javascript">
-	cj("tr.crm-admin-optionvalue-form-block-parent").insertAfter("tr.crm-admin-optionvalue-form-block-grouping");
+	cj("tr.crm-admin-optionvalue-form-block-parent").insertAfter("tr.crm-admin-optionvalue-form-block-is_optgroup");
 	cj("#temp-table").remove();
 </script>
 {/literal}
