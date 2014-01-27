@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<menu>
+  <item>
+    <path>civicrm/collectCaseParentTypes</path>
+    <page_callback>CRM_Caseparent_Page_CollectCaseParentTypes</page_callback>
+    <title>CollectCaseParentTypes</title>
+    <access_arguments>access CiviCRM</access_arguments>
+  </item>
+  <item>
+    <path>civicrm/collectCaseParents</path>
+    <page_callback>CRM_Caseparent_Page_CollectCaseParents</page_callback>
+    <title>CollectCaseParents</title>
+    <access_arguments>access CiviCRM</access_arguments>
+  </item>
+</menu>
